@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#2d6a4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CBT Record">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>CBT Thought Record</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #f5f7f5;
+    --card: #ffffff;
+    --primary: #2d6a4f;
+    --primary-light: #d8f3dc;
+    --text: #1b2a26;
+    --muted: #6b7770;
+    --border: #e1e8e4;
+    --danger: #c84b3c;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    padding-bottom: env(safe-area-inset-bottom);
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 720px; margin: 0 auto; padding: 16px; }
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    position: sticky; top: 0; z-index: 10;
+    box-shadow: var(--shadow);
+  }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .sub { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+
+  .tabs {
+    display: flex; background: var(--card);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 60px; z-index: 9;
+  }
+  .tab {
+    flex: 1; padding: 12px; text-align: center;
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    border: none; background: transparent;
+    border-bottom: 2px solid transparent; cursor: pointer;
+  }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .card {
+    background: var(--card); border-radius: 12px;
+    padding: 16px; margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .field { margin-bottom: 14px; }
+  .field-label {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: var(--primary);
+    margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .field-icon {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--primary-light); color: var(--primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .field-hint { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  textarea, input[type=text] {
+    width: 100%; border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; font-size: 16px; font-family: inherit;
+    background: #fafbfa; resize: vertical; color: var(--text);
+  }
+  textarea { min-height: 70px; }
+  textarea:focus, input:focus { outline: none; border-color: var(--primary); background: white; }
+
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 11px; background: #f0f2f0; color: var(--text);
+    border: 1px solid var(--border); border-radius: 14px;
+    font-size: 13px; cursor: pointer; transition: all 0.15s;
+    user-select: none;
+  }
+  .chip:active { transform: scale(0.95); }
+  .chip.selected {
+    background: var(--primary); color: white;
+    border-color: var(--primary); font-weight: 500;
+  }
+
+  .selected-summary {
+    background: var(--primary-light); border-radius: 8px;
+    padding: 8px 10px; margin-bottom: 10px;
+    font-size: 13px; color: var(--primary); display: none;
+  }
+  .selected-summary.show { display: block; }
+  .selected-summary strong { font-weight: 700; }
+
+  .mood-wrap { padding: 4px 0; }
+  .mood-row { display: flex; align-items: center; gap: 12px; }
+  .mood-value {
+    min-width: 38px; text-align: center;
+    font-size: 18px; font-weight: 700; color: var(--primary);
+  }
+  input[type=range] { flex: 1; accent-color: var(--primary); }
+  .mood-labels {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--muted); margin-top: 4px;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 11px 16px; border-radius: 8px;
+    border: none; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: inherit;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-secondary { background: var(--primary-light); color: var(--primary); }
+  .btn-ghost { background: transparent; color: var(--muted); }
+  .btn-danger { background: #fde7e4; color: var(--danger); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .step-indicator {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px; font-size: 13px; color: var(--muted);
+  }
+  .progress {
+    height: 4px; background: var(--border); border-radius: 2px;
+    margin: 8px 0 16px; overflow: hidden;
+  }
+  .progress-bar { height: 100%; background: var(--primary); transition: width 0.3s; }
+
+  .tag-input-wrap { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; background: var(--primary-light); color: var(--primary);
+    border-radius: 12px; font-size: 13px; font-weight: 500;
+  }
+  .tag .remove { cursor: pointer; opacity: 0.6; font-weight: 700; }
+  .tag-suggest {
+    padding: 4px 10px; background: #f0f2f0; color: var(--muted);
+    border-radius: 12px; font-size: 12px;
+    border: 1px dashed var(--border); cursor: pointer;
+  }
+
+  .entry {
+    background: var(--card); border-radius: 10px;
+    padding: 12px 14px; margin-bottom: 8px;
+    box-shadow: var(--shadow); cursor: pointer;
+  }
+  .entry-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .entry-date { font-size: 12px; color: var(--muted); }
+  .entry-mood {
+    background: var(--primary-light); color: var(--primary);
+    padding: 2px 8px; border-radius: 10px;
+    font-size: 12px; font-weight: 700;
+  }
+  .entry-trigger {
+    font-size: 14px; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .entry-tags { margin-top: 6px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .entry-tags .tag { font-size: 11px; padding: 2px 8px; }
+  .entry-feelings { margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .entry-feelings .chip {
+    font-size: 11px; padding: 2px 7px;
+    background: var(--primary-light); color: var(--primary); border: none;
+  }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 8px; }
+
+  .fab {
+    position: fixed; bottom: 20px; right: 20px;
+    bottom: max(20px, env(safe-area-inset-bottom));
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--primary); color: white; border: none;
+    font-size: 24px; box-shadow: 0 4px 12px rgba(45,106,79,0.35);
+    cursor: pointer; z-index: 5;
+  }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: white; width: 100%; max-width: 720px;
+    border-radius: 16px 16px 0 0;
+    padding: 20px; padding-bottom: max(20px, env(safe-area-inset-bottom));
+    max-height: 85vh; overflow-y: auto;
+  }
+  .modal h3 { margin-top: 0; }
+
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: white;
+    padding: 10px 16px; border-radius: 8px; font-size: 14px;
+    z-index: 200; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .detail-section { margin-bottom: 14px; }
+  .detail-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    color: var(--primary); letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .detail-value {
+    background: #fafbfa; padding: 10px; border-radius: 8px;
+    font-size: 14px; white-space: pre-wrap;
+    border-left: 3px solid var(--primary-light);
+  }
+
+  .toggle-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0;
+  }
+  .switch {
+    position: relative; width: 44px; height: 24px;
+    background: var(--border); border-radius: 12px;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .switch.on { background: var(--primary); }
+  .switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px; background: white;
+    border-radius: 50%; transition: left 0.2s;
+  }
+  .switch.on::after { left: 22px; }
+
+  .install-banner {
+    background: var(--primary-light); color: var(--primary);
+    padding: 10px 14px; margin: 0; text-align: center;
+    font-size: 13px; display: none;
+  }
+  .install-banner.show { display: block; }
+  .install-banner button {
+    background: var(--primary); color: white; border: none;
+    padding: 4px 10px; border-radius: 6px;
+    font-weight: 600; margin-left: 8px; cursor: pointer;
+  }
+
+  details.picker-details { margin-top: 8px; }
+  details.picker-details summary {
+    font-size: 12px; color: var(--text);
+    cursor: pointer; padding: 6px 0; list-style: none;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  details.picker-details summary::-webkit-details-marker { display: none; }
+  details.picker-details summary::before { content: '▸ '; color: var(--muted); }
+  details.picker-details[open] summary::before { content: '▾ '; }
+
+  @media print {
+    header, .tabs, .fab, .btn-row, .install-banner { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧠 CBT Thought Record</h1>
+  <div class="sub">Track triggers, thoughts, feelings & behaviours</div>
+</header>
+
+<div class="install-banner" id="installBanner">
+  Install this app for offline use
+  <button id="installBtn">Install</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="entry">✏️ New Entry</button>
+  <button class="tab" data-tab="history">📋 History <span id="countBadge"></span></button>
+</div>
+
+<div class="container">
+
+  <div id="tab-entry">
+    <div class="card">
+      <div class="toggle-row">
+        <div>
+          <div style="font-weight:600;font-size:14px;">Guided mode</div>
+          <div style="font-size:12px;color:var(--muted);">Step-by-step (you can skip)</div>
+        </div>
+        <div class="switch on" id="modeToggle"></div>
+      </div>
+    </div>
+
+    <div id="guidedView">
+      <div class="card">
+        <div class="step-indicator">
+          <span id="stepLabel">Step 1 of 5</span>
+          <button class="btn btn-ghost" id="skipStepBtn" style="padding:4px 8px;font-size:13px;">Skip →</button>
+        </div>
+        <div class="progress"><div class="progress-bar" id="progressBar" style="width:20%"></div></div>
+        <div id="stepContent"></div>
+        <div class="btn-row" style="margin-top:16px;">
+          <button class="btn btn-secondary" id="prevBtn" style="flex:1;">← Back</button>
+          <button class="btn btn-primary" id="nextBtn" style="flex:2;">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="fullView" style="display:none;">
+      <div class="card">
+        <div class="field">
+          <div class="field-label"><span class="field-icon">📍</span> Trigger / Situation</div>
+          <div class="field-hint">What happened? Where? Who was there?</div>
+          <textarea id="f-trigger" placeholder="e.g. Got an email from EML about claim..."></textarea>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="field-icon">💭</span> Thoughts</div>
+          <div class="field-hint">What went through your mind?</div>
+          <textarea id="f-thoughts" placeholder="e.g. They're going to deny my claim..."></textarea>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="field-icon">❤️</span> Physical / Feelings</div>
+          <div class="field-hint">Tap chips that apply, then add detail if needed</div>
+          <div id="fullFeelingsPicker"></div>
+          <textarea id="f-feelings" placeholder="Other notes (optional)..." style="margin-top:10px;min-height:50px;"></textarea>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="field-icon">🎯</span> Behaviours</div>
+          <div class="field-hint">What did you do (or want to do)?</div>
+          <textarea id="f-behaviours" placeholder="e.g. Avoided replying, scrolled phone..."></textarea>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="field-icon">📊</span> Overall Mood</div>
+          <div class="mood-wrap">
+            <div class="mood-row">
+              <span style="font-size:20px;">😔</span>
+              <input type="range" id="f-mood" min="1" max="10" value="5">
+              <span style="font-size:20px;">😊</span>
+              <span class="mood-value" id="moodValue">5</span>
+            </div>
+            <div class="mood-labels"><span>1 worst</span><span>10 best</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label"><span class="field-icon">🏷️</span> Tags</div>
+          <div class="tag-input-wrap" id="tagsContainer"></div>
+          <input type="text" id="tagInput" placeholder="Add tag + Enter (e.g. work, family, sleep)" style="margin-top:8px;">
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;" id="tagSuggestions"></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="clearBtn">Clear</button>
+        <button class="btn btn-primary" id="saveBtn" style="flex:1;">💾 Save Entry</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-history" style="display:none;">
+    <div class="card" style="display:flex;gap:8px;align-items:center;">
+      <input type="text" id="searchInput" placeholder="🔍 Search entries..." style="flex:1;">
+    </div>
+    <div class="btn-row" style="margin-bottom:12px;">
+      <button class="btn btn-secondary" id="exportAllBtn" style="flex:1;">📄 Export All (PDF)</button>
+      <button class="btn btn-ghost" id="exportJsonBtn">⬇️ Backup</button>
+    </div>
+    <div id="entriesList"></div>
+  </div>
+
+</div>
+
+<button class="fab" id="fabNew" title="New entry">+</button>
+
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" id="detailModalContent"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Categorized to match CBT framework: emotions + physical sensations
+const FEELINGS_CATALOG = {
+  'Anxious / Fearful': {
+    emoji: '😰',
+    items: ['anxious', 'worried', 'nervous', 'scared', 'panicky', 'uneasy', 'tense', 'on-edge', 'overwhelmed', 'dread']
+  },
+  'Sad / Down': {
+    emoji: '😢',
+    items: ['sad', 'down', 'empty', 'hopeless', 'lonely', 'numb', 'tearful', 'discouraged', 'disappointed', 'grieving']
+  },
+  'Angry / Frustrated': {
+    emoji: '😠',
+    items: ['angry', 'frustrated', 'irritated', 'resentful', 'annoyed', 'bitter', 'furious', 'impatient']
+  },
+  'Shame / Guilt': {
+    emoji: '😔',
+    items: ['ashamed', 'guilty', 'embarrassed', 'humiliated', 'inadequate', 'worthless', 'self-critical', 'regret']
+  },
+  'Stressed / Tired': {
+    emoji: '😩',
+    items: ['stressed', 'exhausted', 'burnt out', 'drained', 'foggy', 'restless', 'agitated', 'unmotivated']
+  },
+  'Confused / Stuck': {
+    emoji: '😕',
+    items: ['confused', 'stuck', 'conflicted', 'helpless', 'powerless', 'lost', 'unsure']
+  },
+  'Positive': {
+    emoji: '🙂',
+    items: ['calm', 'relieved', 'hopeful', 'grateful', 'content', 'happy', 'proud', 'energised', 'connected', 'safe']
+  },
+  'Body sensations': {
+    emoji: '🫀',
+    items: ['tight chest', 'racing heart', 'shallow breath', 'stomach knot', 'nausea', 'headache', 'tense shoulders', 'jaw clenched', 'shaky', 'sweaty', 'hot', 'cold', 'dizzy', 'fatigue', 'back pain', 'numb body', 'light-headed']
+  }
+};
+
+const STORAGE_KEY = 'cbt_entries_v1';
+const DRAFT_KEY = 'cbt_draft_v1';
+const PREF_KEY = 'cbt_prefs_v1';
+
+let state = {
+  entries: [],
+  draft: blankDraft(),
+  guidedStep: 0,
+  editingId: null,
+  guidedMode: true
+};
+
+const STEPS = [
+  { key: 'trigger', icon: '📍', label: 'Trigger / Situation', hint: 'What happened? Where? Who was there?', placeholder: 'e.g. Got an email from EML about claim...' },
+  { key: 'thoughts', icon: '💭', label: 'Thoughts', hint: 'What went through your mind?', placeholder: 'e.g. They\'re going to deny my claim...' },
+  { key: 'feelings', icon: '❤️', label: 'Physical / Feelings', hint: 'Tap chips that apply', placeholder: 'Other notes (optional)...' },
+  { key: 'behaviours', icon: '🎯', label: 'Behaviours', hint: 'What did you do (or want to do)?', placeholder: 'e.g. Avoided replying, scrolled phone...' },
+  { key: 'mood_tags', icon: '📊', label: 'Mood & Tags', hint: 'Rate your mood and add tags', placeholder: '' }
+];
+
+const TAG_SUGGESTIONS = ['work', 'family', 'health', 'sleep', 'anxiety', 'pain', 'finance', 'relationship'];
+
+function blankDraft() {
+  return {
+    trigger: '', thoughts: '', feelings: '', feelingsList: [],
+    behaviours: '', mood: 5, tags: []
+  };
+}
+
+function loadAll() {
+  try {
+    state.entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    state.entries.forEach(e => { if (!e.feelingsList) e.feelingsList = []; });
+    const d = localStorage.getItem(DRAFT_KEY);
+    if (d) state.draft = { ...blankDraft(), ...JSON.parse(d) };
+    if (!Array.isArray(state.draft.feelingsList)) state.draft.feelingsList = [];
+    const p = localStorage.getItem(PREF_KEY);
+    if (p) {
+      const prefs = JSON.parse(p);
+      state.guidedMode = prefs.guidedMode !== false;
+    }
+  } catch(e) { console.error(e); }
+}
+function saveEntries() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.entries)); }
+function saveDraft() { localStorage.setItem(DRAFT_KEY, JSON.stringify(state.draft)); }
+function clearDraft() { localStorage.removeItem(DRAFT_KEY); }
+function savePrefs() { localStorage.setItem(PREF_KEY, JSON.stringify({ guidedMode: state.guidedMode })); }
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.tab;
+    document.getElementById('tab-entry').style.display = target === 'entry' ? 'block' : 'none';
+    document.getElementById('tab-history').style.display = target === 'history' ? 'block' : 'none';
+    if (target === 'history') renderEntries();
+  });
+});
+
+const modeToggle = document.getElementById('modeToggle');
+modeToggle.addEventListener('click', () => {
+  state.guidedMode = !state.guidedMode;
+  modeToggle.classList.toggle('on', state.guidedMode);
+  savePrefs();
+  renderEntryView();
+});
+
+function renderEntryView() {
+  document.getElementById('guidedView').style.display = state.guidedMode ? 'block' : 'none';
+  document.getElementById('fullView').style.display = state.guidedMode ? 'none' : 'block';
+  if (state.guidedMode) renderGuidedStep();
+  else syncFullViewFromDraft();
+}
+
+// ============= FEELINGS PICKER =============
+function renderFeelingsPicker(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const selectedCount = state.draft.feelingsList.length;
+  const summary = `<div class="selected-summary ${selectedCount ? 'show' : ''}">
+    <strong>${selectedCount} selected:</strong> ${state.draft.feelingsList.map(escapeHtml).join(', ')}
+  </div>`;
+
+  const catNames = Object.keys(FEELINGS_CATALOG);
+  const sectionsHtml = catNames.map((cat, idx) => {
+    const data = FEELINGS_CATALOG[cat];
+    // Auto-open if any item from this category is selected
+    const hasSelected = data.items.some(item => state.draft.feelingsList.includes(item));
+    const openByDefault = idx < 3 || hasSelected;
+    const chips = data.items.map(item => {
+      const sel = state.draft.feelingsList.includes(item);
+      return `<span class="chip ${sel ? 'selected' : ''}" data-item="${escapeHtml(item)}">${escapeHtml(item)}</span>`;
+    }).join('');
+    return `<details class="picker-details" ${openByDefault ? 'open' : ''}>
+      <summary>${data.emoji} ${cat}</summary>
+      <div class="chip-row" style="margin-top:6px;">${chips}</div>
+    </details>`;
+  }).join('');
+
+  const customHtml = `<div style="margin-top:12px;display:flex;gap:6px;">
+    <input type="text" id="${containerId}-custom" placeholder="Add custom feeling..." style="flex:1;font-size:14px;padding:6px 10px;">
+    <button class="btn btn-secondary" id="${containerId}-add" style="padding:6px 12px;font-size:13px;">+ Add</button>
+  </div>`;
+
+  container.innerHTML = summary + sectionsHtml + customHtml;
+
+  container.querySelectorAll('.chip[data-item]').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const item = chip.dataset.item;
+      if (state.draft.feelingsList.includes(item)) {
+        state.draft.feelingsList = state.draft.feelingsList.filter(x => x !== item);
+      } else {
+        state.draft.feelingsList.push(item);
+      }
+      saveDraft();
+      renderFeelingsPicker(containerId);
+    });
+  });
+
+  const customInput = document.getElementById(`${containerId}-custom`);
+  const addBtn = document.getElementById(`${containerId}-add`);
+  function addCustom() {
+    const v = customInput.value.trim().toLowerCase();
+    if (!v) return;
+    if (!state.draft.feelingsList.includes(v)) {
+      state.draft.feelingsList.push(v);
+      saveDraft();
+      renderFeelingsPicker(containerId);
+    }
+    customInput.value = '';
+  }
+  addBtn.addEventListener('click', addCustom);
+  customInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); addCustom(); }
+  });
+}
+
+// ============= GUIDED MODE =============
+function renderGuidedStep() {
+  const step = STEPS[state.guidedStep];
+  const total = STEPS.length;
+  document.getElementById('stepLabel').textContent = `Step ${state.guidedStep + 1} of ${total}`;
+  document.getElementById('progressBar').style.width = `${((state.guidedStep + 1) / total) * 100}%`;
+
+  const content = document.getElementById('stepContent');
+
+  if (step.key === 'feelings') {
+    content.innerHTML = `
+      <div class="field-label"><span class="field-icon">${step.icon}</span> ${step.label}</div>
+      <div class="field-hint">${step.hint}</div>
+      <div id="guidedFeelingsPicker"></div>
+      <textarea id="g-feelings-notes" placeholder="Other notes (optional)..." style="margin-top:10px;min-height:60px;">${escapeHtml(state.draft.feelings || '')}</textarea>
+    `;
+    renderFeelingsPicker('guidedFeelingsPicker');
+    const notes = document.getElementById('g-feelings-notes');
+    notes.addEventListener('input', e => {
+      state.draft.feelings = e.target.value;
+      saveDraft();
+    });
+    document.getElementById('nextBtn').textContent = 'Next →';
+  } else if (step.key === 'mood_tags') {
+    content.innerHTML = `
+      <div class="field-label"><span class="field-icon">${step.icon}</span> ${step.label}</div>
+      <div class="field-hint">${step.hint}</div>
+      <div class="mood-wrap" style="margin-top:10px;">
+        <div class="mood-row">
+          <span style="font-size:20px;">😔</span>
+          <input type="range" id="g-mood" min="1" max="10" value="${state.draft.mood}">
+          <span style="font-size:20px;">😊</span>
+          <span class="mood-value" id="gMoodValue">${state.draft.mood}</span>
+        </div>
+        <div class="mood-labels"><span>1 worst</span><span>10 best</span></div>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="field-label" style="font-size:12px;">🏷️ Tags</div>
+        <div class="tag-input-wrap" id="gTagsContainer"></div>
+        <input type="text" id="gTagInput" placeholder="Add tag + Enter" style="margin-top:8px;">
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;" id="gTagSuggestions"></div>
+      </div>
+    `;
+    document.getElementById('g-mood').addEventListener('input', e => {
+      state.draft.mood = parseInt(e.target.value);
+      document.getElementById('gMoodValue').textContent = state.draft.mood;
+      saveDraft();
+    });
+    setupTagsUI('gTagsContainer', 'gTagInput', 'gTagSuggestions');
+    document.getElementById('nextBtn').textContent = '💾 Save Entry';
+  } else {
+    content.innerHTML = `
+      <div class="field-label"><span class="field-icon">${step.icon}</span> ${step.label}</div>
+      <div class="field-hint">${step.hint}</div>
+      <textarea id="g-input" placeholder="${escapeHtml(step.placeholder)}" style="min-height:120px;">${escapeHtml(state.draft[step.key] || '')}</textarea>
+    `;
+    const inp = document.getElementById('g-input');
+    inp.addEventListener('input', e => {
+      state.draft[step.key] = e.target.value;
+      saveDraft();
+    });
+    setTimeout(() => inp.focus(), 100);
+    document.getElementById('nextBtn').textContent = 'Next →';
+  }
+
+  document.getElementById('prevBtn').disabled = state.guidedStep === 0;
+}
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  if (state.guidedStep === STEPS.length - 1) saveEntry();
+  else { state.guidedStep++; renderGuidedStep(); }
+});
+document.getElementById('prevBtn').addEventListener('click', () => {
+  if (state.guidedStep > 0) { state.guidedStep--; renderGuidedStep(); }
+});
+document.getElementById('skipStepBtn').addEventListener('click', () => {
+  if (state.guidedStep < STEPS.length - 1) { state.guidedStep++; renderGuidedStep(); }
+  else saveEntry();
+});
+
+// ============= FULL VIEW =============
+function syncFullViewFromDraft() {
+  document.getElementById('f-trigger').value = state.draft.trigger;
+  document.getElementById('f-thoughts').value = state.draft.thoughts;
+  document.getElementById('f-feelings').value = state.draft.feelings;
+  document.getElementById('f-behaviours').value = state.draft.behaviours;
+  document.getElementById('f-mood').value = state.draft.mood;
+  document.getElementById('moodValue').textContent = state.draft.mood;
+  renderFeelingsPicker('fullFeelingsPicker');
+  setupTagsUI('tagsContainer', 'tagInput', 'tagSuggestions');
+}
+
+['trigger', 'thoughts', 'feelings', 'behaviours'].forEach(k => {
+  document.getElementById('f-' + k).addEventListener('input', e => {
+    state.draft[k] = e.target.value;
+    saveDraft();
+  });
+});
+document.getElementById('f-mood').addEventListener('input', e => {
+  state.draft.mood = parseInt(e.target.value);
+  document.getElementById('moodValue').textContent = state.draft.mood;
+  saveDraft();
+});
+
+// ============= TAGS =============
+function setupTagsUI(containerId, inputId, suggestId) {
+  const container = document.getElementById(containerId);
+  const input = document.getElementById(inputId);
+  const suggest = document.getElementById(suggestId);
+
+  function render() {
+    container.innerHTML = state.draft.tags.map(t =>
+      `<span class="tag">${escapeHtml(t)}<span class="remove" data-tag="${escapeHtml(t)}">×</span></span>`
+    ).join('');
+    container.querySelectorAll('.remove').forEach(el => {
+      el.addEventListener('click', () => {
+        state.draft.tags = state.draft.tags.filter(t => t !== el.dataset.tag);
+        saveDraft();
+        render();
+        renderSuggest();
+      });
+    });
+  }
+  function renderSuggest() {
+    const used = new Set(state.draft.tags);
+    suggest.innerHTML = TAG_SUGGESTIONS.filter(t => !used.has(t)).map(t =>
+      `<span class="tag-suggest" data-tag="${t}">+ ${t}</span>`
+    ).join('');
+    suggest.querySelectorAll('.tag-suggest').forEach(el => {
+      el.addEventListener('click', () => addTag(el.dataset.tag));
+    });
+  }
+  function addTag(t) {
+    t = t.trim().toLowerCase();
+    if (!t || state.draft.tags.includes(t)) return;
+    state.draft.tags.push(t);
+    saveDraft();
+    render();
+    renderSuggest();
+  }
+  input.onkeydown = e => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag(input.value);
+      input.value = '';
+    }
+  };
+  render();
+  renderSuggest();
+}
+
+function saveEntry() {
+  const d = state.draft;
+  const hasContent = d.trigger || d.thoughts || d.feelings || d.behaviours || (d.feelingsList && d.feelingsList.length);
+  if (!hasContent) {
+    toast('Tulis sesuatu dulu ya 😊');
+    return;
+  }
+  const now = new Date().toISOString();
+  if (state.editingId) {
+    const idx = state.entries.findIndex(e => e.id === state.editingId);
+    if (idx >= 0) state.entries[idx] = { ...state.entries[idx], ...d, updatedAt: now };
+    state.editingId = null;
+  } else {
+    state.entries.unshift({ id: 'e_' + Date.now(), createdAt: now, updatedAt: now, ...d });
+  }
+  saveEntries();
+  state.draft = blankDraft();
+  state.guidedStep = 0;
+  clearDraft();
+  toast('✓ Saved');
+  renderEntryView();
+  updateBadge();
+  document.querySelector('[data-tab=history]').click();
+}
+
+document.getElementById('saveBtn').addEventListener('click', saveEntry);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (confirm('Clear current draft?')) {
+    state.draft = blankDraft();
+    state.guidedStep = 0;
+    state.editingId = null;
+    clearDraft();
+    renderEntryView();
+  }
+});
+
+function updateBadge() {
+  const b = document.getElementById('countBadge');
+  b.textContent = state.entries.length ? `(${state.entries.length})` : '';
+}
+
+function renderEntries() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const list = document.getElementById('entriesList');
+  let entries = state.entries;
+  if (search) {
+    entries = entries.filter(e =>
+      [e.trigger, e.thoughts, e.feelings, e.behaviours, ...(e.tags || []), ...(e.feelingsList || [])]
+        .join(' ').toLowerCase().includes(search)
+    );
+  }
+  if (!entries.length) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">📭</div>
+      <div>${search ? 'No matches found' : 'No entries yet. Tap + to start.'}</div>
+    </div>`;
+    return;
+  }
+  list.innerHTML = entries.map(e => {
+    const date = new Date(e.createdAt);
+    const dateStr = date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) +
+                    ' · ' + date.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+    const preview = e.trigger || e.thoughts || e.feelings || e.behaviours || (e.feelingsList || []).join(', ') || '(empty)';
+    const tags = (e.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+    const feelChips = (e.feelingsList || []).slice(0, 5).map(f => `<span class="chip">${escapeHtml(f)}</span>`).join('');
+    const more = (e.feelingsList || []).length > 5 ? `<span class="chip">+${e.feelingsList.length - 5}</span>` : '';
+    return `<div class="entry" data-id="${e.id}">
+      <div class="entry-header">
+        <span class="entry-date">${dateStr}</span>
+        <span class="entry-mood">😶 ${e.mood}/10</span>
+      </div>
+      <div class="entry-trigger">${escapeHtml(preview)}</div>
+      ${feelChips ? `<div class="entry-feelings">${feelChips}${more}</div>` : ''}
+      ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.entry').forEach(el => {
+    el.addEventListener('click', () => openDetail(el.dataset.id));
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', renderEntries);
+
+function openDetail(id) {
+  const e = state.entries.find(x => x.id === id);
+  if (!e) return;
+  const date = new Date(e.createdAt);
+  const dateStr = date.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) +
+                  ' · ' + date.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+  const tags = (e.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('');
+  const feelChips = (e.feelingsList || []).map(f => `<span class="chip selected" style="cursor:default;">${escapeHtml(f)}</span>`).join(' ');
+
+  document.getElementById('detailModalContent').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 style="margin:0;">Entry Details</h3>
+      <button class="btn btn-ghost" id="closeModal" style="padding:4px 8px;font-size:20px;">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px;">${dateStr}</div>
+
+    <div class="detail-section">
+      <div class="detail-label">📍 Trigger / Situation</div>
+      <div class="detail-value">${escapeHtml(e.trigger || '—')}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">💭 Thoughts</div>
+      <div class="detail-value">${escapeHtml(e.thoughts || '—')}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">❤️ Physical / Feelings</div>
+      ${feelChips ? `<div style="margin-bottom:8px;display:flex;gap:4px;flex-wrap:wrap;">${feelChips}</div>` : ''}
+      ${e.feelings ? `<div class="detail-value">${escapeHtml(e.feelings)}</div>` : (!feelChips ? '<div class="detail-value">—</div>' : '')}
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">🎯 Behaviours</div>
+      <div class="detail-value">${escapeHtml(e.behaviours || '—')}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-label">📊 Mood</div>
+      <div class="detail-value">${e.mood}/10</div>
+    </div>
+    ${tags ? `<div class="detail-section">
+      <div class="detail-label">🏷️ Tags</div>
+      <div>${tags}</div>
+    </div>` : ''}
+
+    <div class="btn-row" style="margin-top:20px;">
+      <button class="btn btn-secondary" id="editEntry" style="flex:1;">✏️ Edit</button>
+      <button class="btn btn-secondary" id="exportOne" style="flex:1;">📄 PDF</button>
+      <button class="btn btn-danger" id="deleteEntry">🗑️</button>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+  document.getElementById('closeModal').addEventListener('click', closeDetail);
+  document.getElementById('editEntry').addEventListener('click', () => editEntry(id));
+  document.getElementById('exportOne').addEventListener('click', () => exportPDF([e]));
+  document.getElementById('deleteEntry').addEventListener('click', () => deleteEntry(id));
+}
+function closeDetail() {
+  document.getElementById('detailModal').classList.remove('show');
+}
+document.getElementById('detailModal').addEventListener('click', (e) => {
+  if (e.target.id === 'detailModal') closeDetail();
+});
+
+function editEntry(id) {
+  const e = state.entries.find(x => x.id === id);
+  if (!e) return;
+  state.draft = {
+    trigger: e.trigger || '',
+    thoughts: e.thoughts || '',
+    feelings: e.feelings || '',
+    feelingsList: [...(e.feelingsList || [])],
+    behaviours: e.behaviours || '',
+    mood: e.mood || 5,
+    tags: [...(e.tags || [])]
+  };
+  state.editingId = id;
+  state.guidedStep = 0;
+  saveDraft();
+  closeDetail();
+  document.querySelector('[data-tab=entry]').click();
+  renderEntryView();
+  toast('Editing entry');
+}
+
+function deleteEntry(id) {
+  if (!confirm('Delete this entry permanently?')) return;
+  state.entries = state.entries.filter(e => e.id !== id);
+  saveEntries();
+  closeDetail();
+  renderEntries();
+  updateBadge();
+  toast('Deleted');
+}
+
+function exportPDF(entries) {
+  const html = generatePrintHTML(entries);
+  const w = window.open('', '_blank');
+  if (!w) { toast('Allow popups to export PDF'); return; }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => { w.focus(); w.print(); }, 500);
+}
+
+function generatePrintHTML(entries) {
+  const now = new Date().toLocaleString('en-AU');
+  const entriesHtml = entries.map((e, i) => {
+    const date = new Date(e.createdAt);
+    const dateStr = date.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) +
+                    ' · ' + date.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' });
+    const tags = (e.tags || []).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join(' ');
+    const feelChips = (e.feelingsList || []).map(f => `<span class="feel-chip">${escapeHtml(f)}</span>`).join(' ');
+    const feelingsContent = (feelChips || e.feelings)
+      ? `${feelChips ? `<div style="margin-bottom:6px;">${feelChips}</div>` : ''}${e.feelings ? `<p>${escapeHtml(e.feelings)}</p>` : ''}`
+      : '<p>—</p>';
+    return `
+      <div class="entry">
+        <div class="entry-head">
+          <h2>Entry ${i + 1}</h2>
+          <div class="meta">${dateStr} · Mood: ${e.mood}/10</div>
+        </div>
+        <div class="cycle">
+          <div class="quad q1"><h4>📍 Trigger / Situation</h4><p>${escapeHtml(e.trigger || '—')}</p></div>
+          <div class="quad q2"><h4>💭 Thoughts</h4><p>${escapeHtml(e.thoughts || '—')}</p></div>
+          <div class="quad q3"><h4>❤️ Physical / Feelings</h4>${feelingsContent}</div>
+          <div class="quad q4"><h4>🎯 Behaviours</h4><p>${escapeHtml(e.behaviours || '—')}</p></div>
+        </div>
+        ${tags ? `<div class="tags">${tags}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>CBT Thought Record - ${now}</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #1b2a26; line-height: 1.5; margin: 0; padding: 0; }
+  h1 { color: #2d6a4f; font-size: 22px; margin: 0 0 4px; }
+  .header { border-bottom: 2px solid #2d6a4f; padding-bottom: 10px; margin-bottom: 20px; }
+  .header .sub { color: #6b7770; font-size: 12px; }
+  .entry { page-break-inside: avoid; margin-bottom: 24px; border: 1px solid #e1e8e4; border-radius: 8px; padding: 14px; }
+  .entry-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e1e8e4; }
+  .entry-head h2 { color: #2d6a4f; font-size: 16px; margin: 0; }
+  .meta { font-size: 12px; color: #6b7770; }
+  .cycle { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .quad { background: #fafbfa; border-left: 3px solid #2d6a4f; padding: 10px 12px; border-radius: 4px; }
+  .quad h4 { margin: 0 0 6px; font-size: 12px; color: #2d6a4f; text-transform: uppercase; letter-spacing: 0.5px; }
+  .quad p { margin: 0; font-size: 13px; white-space: pre-wrap; }
+  .feel-chip { display: inline-block; padding: 2px 8px; background: #d8f3dc; color: #2d6a4f; border-radius: 10px; font-size: 11px; margin: 2px 2px; }
+  .tags { margin-top: 10px; }
+  .tag { display: inline-block; padding: 2px 8px; background: #d8f3dc; color: #2d6a4f; border-radius: 10px; font-size: 11px; margin-right: 4px; }
+  .footer { margin-top: 20px; font-size: 10px; color: #6b7770; text-align: center; }
+</style></head><body>
+<div class="header">
+  <h1>🧠 CBT Thought Record</h1>
+  <div class="sub">${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} · Exported ${now}</div>
+</div>
+${entriesHtml}
+<div class="footer">Generated by CBT Thought Record PWA</div>
+</body></html>`;
+}
+
+document.getElementById('exportAllBtn').addEventListener('click', () => {
+  if (!state.entries.length) { toast('No entries to export'); return; }
+  exportPDF(state.entries);
+});
+
+document.getElementById('exportJsonBtn').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(state.entries, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `cbt-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+});
+
+document.getElementById('fabNew').addEventListener('click', () => {
+  state.draft = blankDraft();
+  state.guidedStep = 0;
+  state.editingId = null;
+  clearDraft();
+  document.querySelector('[data-tab=entry]').click();
+  renderEntryView();
+});
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+document.getElementById('installBtn').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW reg failed:', err));
+  });
+}
+
+loadAll();
+modeToggle.classList.toggle('on', state.guidedMode);
+updateBadge();
+renderEntryView();
+</script>
+</body>
+</html>
